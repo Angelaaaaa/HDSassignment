@@ -7,7 +7,7 @@ import pandas as pd
 practicesName = "T201804ADDR+BNFT.CSV"
 presFile = "T201804PDPI+BNFT.CSV"
 # presFile = "test.CSV"
-columnNamePrac = ['code','surgury','surgery','address','city','county','postcode']
+# columnNamePrac = ['code','surgury','surgery','address','city','county','postcode']
 patiFile = "gp-reg-pat-prac-all.csv"
 
 def readToPandas(name,columnName):
@@ -20,9 +20,10 @@ def readToPandas(name,columnName):
 # return london practice code as list
 def getCityPractice(practiceInfo,city):
     practiceInfo['city'] = practiceInfo['city'].str.strip()
-    cityPrac = practiceInfo.loc[practiceInfo['city'] == city]
+    practiceInfo['county'] = practiceInfo['county'].str.strip()
+    cityPrac = practiceInfo.loc[(practiceInfo['city'] == city) | (practiceInfo['county'] == city)]
     cityPracList = cityPrac['code'].tolist()
-    # print(londonPracList)
+    # print(len(cityPrac))
     return cityPracList
 
 
@@ -30,8 +31,6 @@ def getCityPractice(practiceInfo,city):
 def getPatientNumber(practiceList,Q):
     pati = readToPandas(patiFile,None)
     patiNumDict = dict(zip(pati.CODE, pati.NUMBER_OF_PATIENTS))
-    # print( dict(zip(pati.CODE, pati.NUMBER_OF_PATIENTS)))
-    # print(practiceList)
     sum = 0
     errorList = []
     for paticode in practiceList:
@@ -46,7 +45,6 @@ def getTotalPres(practiceList,Q):
     presColumn = [' SHA', 'PCT', 'PRACTICE', 'BNF CODE', 'BNF NAME', 'ITEMS  ', 'NIC', 'ACT_COST', 'QUANTITY', 'PERIOD',
                   'Null']
     presInfo = readToPandas(presFile,presColumn)
-    # print(presInfo)
     presQuantity = presInfo[['PRACTICE', 'QUANTITY']]
     presQuantity = presQuantity.loc[presQuantity['PRACTICE'].isin(practiceList)][['PRACTICE','QUANTITY']]
     presQuantity = presQuantity[['PRACTICE', 'QUANTITY']]
@@ -58,7 +56,6 @@ def getTotalPresCost(practiceList,Q):
                   'Null']
 
     presInfo = readToPandas(presFile, presColumn)
-    # print(presInfo)
     presCost = presInfo[['PRACTICE','QUANTITY', 'ACT_COST']]
     presCost = presCost.loc[presCost['PRACTICE'].isin(practiceList)][['PRACTICE', 'QUANTITY','ACT_COST']]
     presCost = presCost[['PRACTICE', 'QUANTITY','ACT_COST']]
@@ -85,38 +82,64 @@ def getFrequencyOfPres(practiceList,Q):
 
     # print(presFreqLn)
 
+def getAllPresRelatedToChapter(chapNum):
+    presColumn = [' SHA', 'PCT', 'PRACTICE', 'BNF_CODE', 'BNF_NAME', 'ITEMS  ', 'NIC', 'ACT_COST', 'QUANTITY', 'PERIOD',
+                  'Null']
+    presInfo = readToPandas(presFile, presColumn)
+    presCode = presInfo[['BNF_CODE', 'QUANTITY','ACT_COST']]
+    # find chapter related
+    presCha = presCode.loc[lambda presCode: ((presCode.BNF_CODE > chapNum ) & (presCode.BNF_CODE < str(0)+str(int(chapNum)+1))), :]
+    sum  = presCha['QUANTITY'].sum()
+    print('Q3.total num of prescription related to chapter' + chapNum + ' is '+str(sum))
+
+    presCha = presCha[['BNF_CODE', 'QUANTITY','ACT_COST']]
+    presCha['TOTAL_COST'] = presCha['QUANTITY']*presCha['ACT_COST']
+
+    totalcost = presCha['TOTAL_COST'].sum()
+    print('Q3.total cost of prescription related to chapter' + chapNum + ' is '+str(totalcost))
 
 
-# Q1
-# get london practice names
-praclistLn = getCityPractice(readToPandas(practicesName,columnNamePrac),'LONDON')
+#
+# # Q1
+# # get london practice names
+# praclistLn = getCityPractice(readToPandas(practicesName,columnNamePrac),'LONDON')
+#
+# # 1).get total patient number
+# getPatientNumber(praclistLn,1)
+#
+# # 2).get prescription data
+# getTotalPres(praclistLn,1)
+#
+# # 3).get prescription total cost data
+# getTotalPresCost(praclistLn,1)
+#
+# # 4).get prescription frequency
+# getFrequencyOfPres(praclistLn,1)
+#
+#
+# # Q2
+# # get cambridge practice names
+# praclistCA = getCityPractice(readToPandas(practicesName,columnNamePrac),'CAMBRIDGE')
+#
+# # 1).get total patient number
+# getPatientNumber(praclistCA,2)
+#
+# # 2).get prescription data
+# getTotalPres(praclistCA,2)
+#
+# # 3).get prescription total cost data
+# getTotalPresCost(praclistCA,2)
+#
+# # 4).get prescription frequency
+# getFrequencyOfPres(praclistCA,2)
+#
+# Q3
+# 1).get quantity pres & get total cost related to chapter 2
+# getAllPresRelatedToChapter('02')
+#
+# # 2).get quantity pres & get total cost related to chapter 4.2
+# getAllPresRelatedToChapter('0402')
 
-# 1).get total patient number
-getPatientNumber(praclistLn,1)
-
-# 2).get prescription data
-getTotalPres(praclistLn,1)
-
-# 3).get prescription total cost data
-getTotalPresCost(praclistLn,1)
-
-# 4).get prescription frequency
-getFrequencyOfPres(praclistLn,1)
-
-
-# Q2
-# get cambridge practice names
-praclistCA = getCityPractice(readToPandas(practicesName,columnNamePrac),'CAMBRIDGE')
-
-# 1).get total patient number
-getPatientNumber(praclistCA,2)
-
-# 2).get prescription data
-getTotalPres(praclistCA,2)
-
-# 3).get prescription total cost data
-getTotalPresCost(praclistCA,2)
-
-# 4).get prescription frequency
-getFrequencyOfPres(praclistCA,2)
-
+# Q4
+# 1). total patients in practice and store in dictionary
+# 2). total cost of a practice
